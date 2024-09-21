@@ -12,8 +12,10 @@ class Lock:
         self.status = LockStatus.NOT_GRANTED
         self.transaction_id = operation.get_transaction_id()
         self.object = operation.get_object()
+        self.waiting_object = None
 
-    def _determine_lock_type(self, operation_type: OperationTypes) -> LockTypes:
+    @staticmethod
+    def _determine_lock_type(operation_type: OperationTypes) -> LockTypes:
         if operation_type == OperationTypes.COMMIT:
             return LockTypes.CERTIFY_LOCK
         elif operation_type == OperationTypes.READ:

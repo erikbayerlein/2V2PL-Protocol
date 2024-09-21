@@ -9,6 +9,7 @@ class Scheduler:
     def __init__(self):
         self.lock_table = LockTable()
         self.transactions = {}  # To keep track of active transactions
+        self.waiting_operation = []
 
     def schedule(self, operations):
         result = []
@@ -79,6 +80,7 @@ class Scheduler:
                 print(result)
             else:
                 result = f"Transaction {transaction_id} is waiting"
+                self.waiting_operation.append(operation)
                 print(f"Transaction {transaction_id} is waiting")
         else:
             result = f"Transaction {transaction_id} not found"
