@@ -30,12 +30,17 @@ class Scheduler:
         
         # Try to grant the lock
         lock_granted = self.lock_table.grant_lock(operation)
-        
+
         if lock_granted:
+            lock = self.lock_table.get_lock(transaction_id, obj)
+            self.transactions[transaction_id].add_lock(lock)
+            self.transactions[transaction_id].add_operation(operation)
             result = f"Transaction {transaction_id} read object {obj}"
+            print(result)
         else:
             result = f"Transaction {transaction_id} is waiting for object {obj}"
-        
+            print(result)
+
         return result
 
     def handle_write(self, operation):
@@ -47,25 +52,35 @@ class Scheduler:
         
         # Try to grant the lock
         lock_granted = self.lock_table.grant_lock(operation)
-        
+
         if lock_granted:
+            lock = self.lock_table.get_lock(transaction_id, obj)
+            self.transactions[transaction_id].add_lock(lock)
             result = f"Transaction {transaction_id} wrote object {obj}"
+            print(result)
         else:
             result = f"Transaction {transaction_id} is waiting for object {obj}"
-        
+            print(result)
+
         return result
 
     def handle_commit(self, operation):
         transaction_id = operation.get_transaction_id()
-        
+
         if transaction_id in self.transactions:
-            transaction = self.transactions[transaction_id]
-            # Release all locks held by this transaction
-            for lock in transaction.get_locks():
-                lock.set_status(LockStatus.NOT_GRANTED)  # Locks are released
-            del self.transactions[transaction_id]
-            result = f"Transaction {transaction_id} committed"
+            lock_granted = self.lock_table.grant_lock(operation)
+            if lock_granted:
+                transaction = self.transactions[transaction_id]
+                for lock in transaction.get_locks():
+                    self.lock_table.release_lock(lock)
+                del self.transactions[transaction_id]
+                result = f"Transaction {transaction_id} committed"
+                print(result)
+            else:
+                result = f"Transaction {transaction_id} is waiting"
+                print(f"Transaction {transaction_id} is waiting")
         else:
             result = f"Transaction {transaction_id} not found"
-        
+            print(result)
+
         return result

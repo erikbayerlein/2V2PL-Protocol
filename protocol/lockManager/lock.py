@@ -4,6 +4,7 @@ from protocol.lockManager.lock_status import LockStatus
 from protocol.operationManager.operation import Operation
 from protocol.operationManager.operation_types import OperationTypes
 
+
 class Lock:
     def __init__(self, operation: Operation):
         self.operation = operation
