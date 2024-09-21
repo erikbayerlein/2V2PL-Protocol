@@ -56,6 +56,7 @@ class Scheduler:
         if lock_granted:
             lock = self.lock_table.get_lock(transaction_id, obj)
             self.transactions[transaction_id].add_lock(lock)
+            self.transactions[transaction_id].add_operation(operation)
             result = f"Transaction {transaction_id} wrote object {obj}"
             print(result)
         else:
@@ -68,7 +69,7 @@ class Scheduler:
         transaction_id = operation.get_transaction_id()
 
         if transaction_id in self.transactions:
-            lock_granted = self.lock_table.grant_lock(operation)
+            lock_granted = self.lock_table.grant_lock(operation, self.transactions[transaction_id])
             if lock_granted:
                 transaction = self.transactions[transaction_id]
                 for lock in transaction.get_locks():

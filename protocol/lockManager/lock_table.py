@@ -5,6 +5,9 @@ from protocol.lockManager.lock import Lock
 from protocol.lockManager.lock_status import LockStatus
 from protocol.operationManager.operation import Operation
 from protocol.graph.graph import Graph
+from protocol.operationManager.operation_types import OperationTypes
+from protocol.transactionManager.transaction import Transaction
+
 
 class LockTable:
     def __init__(self):
@@ -14,7 +17,7 @@ class LockTable:
 
     @staticmethod
     def _lock_conflict(lock_on_wait: Lock, lock_granted: Lock) -> bool:
-        if lock_on_wait.get_object() != lock_granted.get_object():
+        if lock_on_wait.get_type() != LockTypes.CERTIFY_LOCK and lock_on_wait.get_object() != lock_granted.get_object():
             return False
 
         new_type = lock_on_wait.get_type()
@@ -28,7 +31,7 @@ class LockTable:
 
         return conflict_matrix[new_type][granted_type]
 
-    def grant_lock(self, operation: Operation) -> bool:
+    def grant_lock(self, operation: Operation, transaction: Transaction = None) -> bool:
         lock = Lock(operation)
         transaction_id = operation.get_transaction_id()
         obj = operation.get_object()
@@ -38,6 +41,19 @@ class LockTable:
             return True
 
         conflict_found = False
+
+        if transaction:
+            for op in transaction.operations:
+                if op.get_type() == OperationTypes.WRITE:
+                    for l in self.obj_locks[op.object]:
+                        lock_to_release = transaction.get_locks_by_obj(l.get_object())
+                        if l.transaction_id != transaction_id and self._lock_conflict(lock, l):
+                            conflict_found = True
+                            lock.set_status(LockStatus.WAITING)
+                            self.locks.append(lock)
+                            self.dependency_graph.add_dependency_edge(transaction_id, l.get_transaction_id())
+                            break
+
         if obj in self.obj_locks:
             for l in self.obj_locks[obj]:
                 if self._lock_conflict(lock, l):
