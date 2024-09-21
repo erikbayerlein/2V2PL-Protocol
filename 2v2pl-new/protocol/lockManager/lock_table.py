@@ -5,7 +5,6 @@ from protocol.lockManager.lock import Lock
 from protocol.lockManager.lock_status import LockStatus
 from protocol.operationManager.operation import Operation
 from protocol.graph.graph import Graph
-from protocol.operationManager.operation_types import OperationTypes
 from protocol.transactionManager.transaction import Transaction
 
 

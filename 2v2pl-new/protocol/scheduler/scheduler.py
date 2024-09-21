@@ -1,8 +1,6 @@
 # protocol/scheduler/scheduler.py
-from protocol.lockManager.lock_status import LockStatus
 from protocol.lockManager.lock_table import LockTable
 from protocol.transactionManager.transaction import Transaction
-from protocol.operationManager.operation import Operation
 from protocol.operationManager.operation_types import OperationTypes
 
 class Scheduler:
