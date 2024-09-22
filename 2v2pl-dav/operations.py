@@ -1,14 +1,13 @@
-"""
-Classe que define o tipo de operação realizado no scheduler
-"""
-
-
 class Operation:
-    def __init__(self, tipo: str):
-        if tipo == 'R': self.operation = 'Read'
-        if tipo == 'W': self.operation = 'Write'
-        if tipo == 'U': self.operation = 'Update'
-        if tipo == 'C': self.operation = 'Commit'
+    def __init__(self, op_type: str):
+        if op_type == 'r':
+            self.operation = 'Read'
+        if op_type == 'w':
+            self.operation = 'Write'
+        if op_type == 'u':
+            self.operation = 'Update'
+        if op_type == 'c':
+            self.operation = 'Commit'
 
     def get_operation(self) -> str:
         return self.operation
