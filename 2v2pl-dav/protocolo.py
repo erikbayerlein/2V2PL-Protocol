@@ -173,7 +173,7 @@ class Schedule:
 
     def schedule(self, transactions):
         self.graph.create_nodes(transactions)
-        s = []
+        schedule = []
 
         while transactions:
             for k, trans in enumerate(transactions):
@@ -181,22 +181,20 @@ class Schedule:
                 obj = None
                 if op.get_operation() != "Commit":
                     obj = trans[2]
-
                 try:
                     if op.get_operation() == 'Write':
-                        self.handle_write(trans, transactions, s, obj)
+                        self.handle_write(trans, transactions, schedule, obj)
                     elif op.get_operation() == 'Read':
-                        self.handle_read(trans, transactions, s, obj)
+                        self.handle_read(trans, transactions, schedule, obj)
                     elif op.get_operation() == 'Update':
-                        self.handle_update(trans, transactions, s)
+                        self.handle_update(trans, transactions, schedule)
                     elif op.get_operation() == 'Commit':
-                        self.handle_commit(trans, transactions, s)
+                        self.handle_commit(trans, transactions, schedule)
                 except DeadlockException as e:
                     return str(e)
-
             transactions = self.waiting_transactions
 
-        return s
+        return schedule
 
     def handle_write(self, trans, transactions, s, obj):
         op, transaction = trans[0], trans[1]
@@ -207,6 +205,7 @@ class Schedule:
             s.append(copy.deepcopy(trans))
             obj.version_normal()
             self._grant_update(obj, transaction)
+            print(f"Transaction {trans[1]} got write lock for object {obj}")
         else:
             self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
@@ -221,6 +220,7 @@ class Schedule:
                 obj.version_normal()
             else:
                 s.append(trans)
+            print(f"Transaction {trans[1]} got read lock for object {obj}")
         else:
             self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
@@ -247,6 +247,7 @@ class Schedule:
             self._lock_commit(s, transaction)
             self.graph.remove_node(transaction.get_transaction())
             s.append(trans)
+            print(f"Transaction {trans[1]} was committed")
 
     def _handle_conflict(self, conflicting_trans, transaction, trans, transactions, s):
         self.graph.add_edge(conflicting_trans, transaction.get_transaction())
@@ -254,9 +255,10 @@ class Schedule:
             transactions, aborted_trans = self._abort_transaction(s, transactions)
             self.graph.remove_node(aborted_trans)
             raise DeadlockException(
-                f"{aborted_trans} se envolveu em um deadlock e foi abortada por ser a transação mais recente!"
+                f"DeadLock detected: aborting most recent transaction: {aborted_trans}"
             )
         self.waiting_transactions.append(trans)
+        print(f"Transaction {conflicting_trans} is waiting for {transaction.get_transaction()}")
 
     @staticmethod
     def _grant_update(obj, transaction):
