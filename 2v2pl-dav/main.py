@@ -79,7 +79,10 @@ def cria_objetos(scheduler):
     return vetor_tran
 
 vetor_tran = cria_objetos(scheduler)
-scheduler_correct = protocolo.protocolo(vetor_tran)
+scheduler = protocolo.Schedule()
+scheduler_correct = scheduler.schedule(vetor_tran)
+# scheduler_correct = protocolo.protocolo(vetor_tran)
+
 
 
 def descodifica(scheduler_correct):
