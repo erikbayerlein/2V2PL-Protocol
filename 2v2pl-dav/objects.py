@@ -2,16 +2,72 @@ from typing import Dict
 
 
 class Objects:
-    def __init__(self, type, ID):
+    def __init__(self, obj_type, obj_id):
         objects = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
-        if not type.isnumeric():
-            type = objects.index(type)
-        self.id = ID
-        self.obj = objects[type]
-        self.index = type
-        self.ancestors = {'Database': [], 'Tablespace': [], 'Table': [], 'Page': [], 'Row': []}
+        if not obj_type.isnumeric():
+            obj_type = objects.index(obj_type)
+        self.id = obj_id
+        self.obj = objects[obj_type]
+        self.index = obj_type
+        self.ancestors = {
+            'Database': [],
+            'Tablespace': [],
+            'Table': [],
+            'Page': [],
+            'Row': []
+        }
         self.blocks = []
         self.version = 'Old'
+
+    def create_schema(self, db, rows_num: int, pages_num: int, tables_num: int, tablespace_num: int):
+        dicionario = {db.id: db}
+
+        for i in range(tablespace_num):
+            tablespace = Objects('Tablespace', f'AA{i + 1}')
+            self._check_ancestors(db, tablespace)
+            dicionario[tablespace.id] = tablespace
+
+        U = 1
+        tablespaces = db.ancestors['Tablespace']
+        for tablespace in tablespaces:
+            for i in range(tables_num):
+                table = Objects('Table', f'TB{U + i}')
+                self._check_ancestors(tablespace, table)
+                dicionario[table.id] = table
+            U = U + tables_num
+
+        U = 1
+        tablespaces = db.ancestors['Tablespace']
+        for tablespace in tablespaces:
+            table = tablespace.ancestors['Table']
+            for table in table:
+                for i in range(pages_num):
+                    page = Objects('Page', f'PG{U + i}')
+                    self._check_ancestors(table, page)
+                    dicionario[page.id] = page
+                U = U + pages_num
+
+        U = 1
+        tablespaces = db.ancestors['Tablespace']
+        for tablespace in tablespaces:
+            table = tablespace.ancestors['Table']
+            for table in table:
+                pages = table.ancestors['Page']
+                for page in pages:
+                    for i in range(rows_num):
+                        row = Objects('Row', f'TP{U + i}')
+                        self._check_ancestors(page, row)
+                        dicionario[row.id] = row
+                    U += rows_num
+        return dicionario
+
+    def _check_ancestors(self, predecessor, successor):
+        objects = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
+        predecessor.ancestors[successor.obj].append(successor)
+        successor.ancestors[predecessor.obj].append(predecessor)
+        if predecessor.index - 1 < 0:
+            return
+        return self._check_ancestors(predecessor.ancestors[objects[predecessor.index - 1]][0], successor)
 
     def change_version(self, transaction):
         self.version = transaction
@@ -27,55 +83,3 @@ class Objects:
 
     def __repr__(self) -> str:
         return f"ID_Objeto = {self.id} -> Versão = {self.version}"
-
-
-def check_ancestors(predecessor: Objects, sucessor: Objects):
-    objetos = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
-    predecessor.ancestors[sucessor.obj].append(sucessor)
-    sucessor.ancestors[predecessor.obj].append(predecessor)
-    if predecessor.index - 1 < 0: return
-    return check_ancestors(predecessor.ancestors[objetos[predecessor.index - 1]][0], sucessor)
-
-
-def create_schema(banco: Objects, qnt_tuplas: int, qnt_paginas: int, qnt_tabelas: int, qnt_areas: int) -> Dict[
-    str, Objects]:
-    dicionario = {banco.id: banco}
-
-    for i in range(qnt_areas):
-        area = Objects('Tablespace', f'AA{i + 1}')
-        check_ancestors(banco, area)
-        dicionario[area.id] = area
-
-    U = 1
-    areas = banco.ancestors['Tablespace']
-    for area in areas:
-        for i in range(qnt_tabelas):
-            tabela = Objects('Table', f'TB{U + i}')
-            check_ancestors(area, tabela)
-            dicionario[tabela.id] = tabela
-        U = U + qnt_tabelas
-
-    U = 1
-    areas = banco.ancestors['Tablespace']
-    for area in areas:
-        tabelas = area.ancestors['Table']
-        for tabela in tabelas:
-            for i in range(qnt_paginas):
-                pagina = Objects('Page', f'PG{U + i}')
-                check_ancestors(tabela, pagina)
-                dicionario[pagina.id] = pagina
-            U = U + qnt_paginas
-
-    U = 1
-    areas = banco.ancestors['Tablespace']
-    for area in areas:
-        tabelas = area.ancestors['Table']
-        for tabela in tabelas:
-            paginas = tabela.ancestors['Page']
-            for pagina in paginas:
-                for i in range(qnt_tuplas):
-                    tupla = Objects('Row', f'TP{U + i}')
-                    check_ancestors(pagina, tupla)
-                    dicionario[tupla.id] = tupla
-                U += qnt_tuplas
-    return dicionario
