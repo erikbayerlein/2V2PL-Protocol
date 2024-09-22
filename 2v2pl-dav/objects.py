@@ -1,6 +1,3 @@
-from typing import Dict
-
-
 class Objects:
     def __init__(self, obj_type, obj_id):
         objects = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
@@ -16,7 +13,7 @@ class Objects:
             'Page': [],
             'Row': []
         }
-        self.blocks = []
+        self.locks = []
         self.version = 'Old'
 
     def create_schema(self, db, rows_num: int, pages_num: int, tables_num: int, tablespace_num: int):

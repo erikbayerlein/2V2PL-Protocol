@@ -6,6 +6,7 @@ import copy
 class DeadlockException(Exception):
     pass
 
+
 # def cria_nos(grafo, transactions):
 #     created_transactions = []
 #     for trans in transactions:
@@ -263,9 +264,9 @@ class Scheduler:
     @staticmethod
     def _grant_update(obj, transaction):
         transaction_id = transaction.get_transaction()
-        for i, bloqueio in enumerate(obj.blocks):
-            if bloqueio[1] == transaction_id and bloqueio[0] == 'UL':
-                obj.blocks[i][0] = 'WL'
+        for i, lock in enumerate(obj.locks):
+            if lock[1] == transaction_id and lock[0] == 'UL':
+                obj.locks[i][0] = 'WL'
 
     @staticmethod
     def _grant_certify(transactions, transaction):
@@ -276,11 +277,10 @@ class Scheduler:
         certify_objects = [
             obj for obj in write_objects
             if all(bloqueio[0] not in ('RL', 'IRL') or bloqueio[1] == transaction.get_transaction() for bloqueio in
-                   obj.blocks)
+                   obj.locks)
         ]
         for obj in certify_objects:
             Locks.lock_certify(obj, transaction)
-
 
     @staticmethod
     def _abort_transaction(s, transactions):
@@ -306,11 +306,11 @@ class Scheduler:
             if t[0].get_operation() == 'Write' and t[1].get_transaction() == transaction.get_transaction()
         ]
         for obj in read_objects:
-            for bloqueio in obj.blocks:
-                if bloqueio[0] in ('RL', 'IRL') and bloqueio[1] != transaction.get_transaction():
-                    return True, bloqueio[1]
+            for lock in obj.locks:
+                if lock[0] in ('RL', 'IRL') and lock[1] != transaction.get_transaction():
+                    return True, lock[1]
         return False, None
 
     @staticmethod
     def _check_write(transaction, obj):
-        return any(bloqueio[1] == transaction.get_transaction() and bloqueio[0] == 'WL' for bloqueio in obj.blocks)
+        return any(lock[1] == transaction.get_transaction() and lock[0] == 'WL' for lock in obj.locks)
