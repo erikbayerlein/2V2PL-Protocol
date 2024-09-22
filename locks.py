@@ -103,8 +103,17 @@ class Locks:
     @staticmethod
     def _get_conflicting_locks(blocks, l_type, t):
         lock_types = {
-            'RL': {'CL', 'ICL', 'UL', 'IUL'},
-            'WL': {'CL', 'UL', 'WL', 'ICL', 'IWL', 'IUL'},
+            'RL': {'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'WL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'UL': {'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'CL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'IRL': {'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'IWL': {'RL', 'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'IUL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
+            'ICL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
         }
-        conflicting_types = lock_types.get(l_type, {'WL', 'UL', 'IWL', 'IUL'})
-        return [i for i in blocks if i[0] in conflicting_types and i[1] != t]
+
+        conflicting_types = lock_types.get(l_type, set())
+        # return locks from blocks that are of a conflicting type and belong to different transactions
+        return [lock for lock in blocks if lock[0] in conflicting_types and lock[1] != t]
+

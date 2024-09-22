@@ -84,20 +84,25 @@ class Scheduler:
         else:
             self._lock_commit(transactions, transaction)
             self._lock_commit(s, transaction)
-            self.graph.remove_node(transaction.get_transaction())
+            self.graph.remove_dependency_edges(transaction.get_transaction())
             s.append(trans)
             print(f"Transaction {trans[1]} was committed")
 
-    def _handle_conflict(self, conflicting_trans, transaction, trans, transactions, s):
-        self.graph.add_edge(conflicting_trans, transaction.get_transaction())
+    def _handle_conflict(self, old_transaction, new_transaction, trans, transactions, s):
+        if trans[0].operation == "Write":
+            self.graph.add_edge(old_transaction, new_transaction.get_transaction())
+            print(f"Dependency edge added from {old_transaction} to {new_transaction.get_transaction()}")
+        else:
+            self.graph.add_edge(new_transaction.get_transaction(), old_transaction)
+            print(f"Dependency edge added from {new_transaction.get_transaction()} to {old_transaction}")
+
         if self.graph.has_cycle():
             transactions, aborted_trans = self._abort_transaction(s, transactions)
-            self.graph.remove_node(aborted_trans)
+            print(f"DeadLock detected. aborting most recent transaction")
             raise DeadlockException(
-                f"DeadLock detected: aborting most recent transaction: {aborted_trans}"
+                f"DeadLock detected. aborting most recent transaction"
             )
         self.waiting_transactions.append(trans)
-        print(f"Transaction {conflicting_trans} is waiting for {transaction.get_transaction()}")
 
     @staticmethod
     def _grant_update(obj, transaction):
