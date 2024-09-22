@@ -114,7 +114,7 @@ class Scheduler:
         ]
         certify_objects = [
             obj for obj in write_objects
-            if all(bloqueio[0] not in ('RL', 'IRL') or bloqueio[1] == transaction.get_transaction() for bloqueio in
+            if all(lock[0] not in ('RL', 'IRL') or lock[1] == transaction.get_transaction() for lock in
                    obj.locks)
         ]
         for obj in certify_objects:
