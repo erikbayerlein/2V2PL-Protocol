@@ -1,82 +1,69 @@
 class Objects:
-    def __init__(self, obj_type, obj_id):
-        objects = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
-        if not obj_type.isnumeric():
-            obj_type = objects.index(obj_type)
-        self.id = obj_id
-        self.obj = objects[obj_type]
-        self.index = obj_type
-        self.ancestors = {
-            'Database': [],
-            'Tablespace': [],
-            'Table': [],
-            'Page': [],
-            'Row': []
-        }
+    def __init__(self, entity_type, entity_id):
+        valid_entities = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
+
+        if not entity_type.isnumeric():
+            entity_type = valid_entities.index(entity_type)
+
+        self.id = entity_id
+        self.type = valid_entities[entity_type]
+        self.index = entity_type
+        self.ancestors = {entity: [] for entity in valid_entities}
         self.locks = []
-        self.version = 'Old'
+        self.version = 0
 
-    def create_schema(self, db, rows_num: int, pages_num: int, tables_num: int, tablespace_num: int):
-        dicionario = {db.id: db}
+    def create_schema(self, database, num_rows: int, num_pages: int, num_tables: int, num_tablespaces: int):
+        schema = {database.id: database}
 
-        for i in range(tablespace_num):
-            tablespace = Objects('Tablespace', f'AA{i + 1}')
-            self._check_ancestors(db, tablespace)
-            dicionario[tablespace.id] = tablespace
+        for i in range(num_tablespaces):
+            tablespace = Objects('Tablespace', f'TS{i + 1}')
+            self._link_ancestors(database, tablespace)
+            schema[tablespace.id] = tablespace
 
-        U = 1
-        tablespaces = db.ancestors['Tablespace']
-        for tablespace in tablespaces:
-            for i in range(tables_num):
-                table = Objects('Table', f'TB{U + i}')
-                self._check_ancestors(tablespace, table)
-                dicionario[table.id] = table
-            U = U + tables_num
+        table_counter = 1
+        for tablespace in database.ancestors['Tablespace']:
+            for i in range(num_tables):
+                table = Objects('Table', f'TB{table_counter}')
+                table_counter += 1
+                self._link_ancestors(tablespace, table)
+                schema[table.id] = table
 
-        U = 1
-        tablespaces = db.ancestors['Tablespace']
-        for tablespace in tablespaces:
-            table = tablespace.ancestors['Table']
-            for table in table:
-                for i in range(pages_num):
-                    page = Objects('Page', f'PG{U + i}')
-                    self._check_ancestors(table, page)
-                    dicionario[page.id] = page
-                U = U + pages_num
+        page_counter = 1
+        for tablespace in database.ancestors['Tablespace']:
+            for table in tablespace.ancestors['Table']:
+                for i in range(num_pages):
+                    page = Objects('Page', f'PG{page_counter}')
+                    page_counter += 1
+                    self._link_ancestors(table, page)
+                    schema[page.id] = page
 
-        U = 1
-        tablespaces = db.ancestors['Tablespace']
-        for tablespace in tablespaces:
-            table = tablespace.ancestors['Table']
-            for table in table:
-                pages = table.ancestors['Page']
-                for page in pages:
-                    for i in range(rows_num):
-                        row = Objects('Row', f'TP{U + i}')
-                        self._check_ancestors(page, row)
-                        dicionario[row.id] = row
-                    U += rows_num
-        return dicionario
+        row_counter = 1
+        for tablespace in database.ancestors['Tablespace']:
+            for table in tablespace.ancestors['Table']:
+                for page in table.ancestors['Page']:
+                    for i in range(num_rows):
+                        row = Objects('Row', f'RW{row_counter}')
+                        row_counter += 1
+                        self._link_ancestors(page, row)
+                        schema[row.id] = row
 
-    def _check_ancestors(self, predecessor, successor):
-        objects = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
-        predecessor.ancestors[successor.obj].append(successor)
-        successor.ancestors[predecessor.obj].append(predecessor)
-        if predecessor.index - 1 < 0:
-            return
-        return self._check_ancestors(predecessor.ancestors[objects[predecessor.index - 1]][0], successor)
+        return schema
 
-    def change_version(self, transaction):
-        self.version = transaction
+    def _link_ancestors(self, parent, child):
+        entity_hierarchy = ['Database', 'Tablespace', 'Table', 'Page', 'Row']
 
-    def normal_version(self):
-        self.version = 'Old'
+        parent.ancestors[child.type].append(child)
+        child.ancestors[parent.type].append(parent)
+
+        if parent.index > 0:
+            previous_entity = parent.ancestors[entity_hierarchy[parent.index - 1]][0]
+            self._link_ancestors(previous_entity, child)
+
+    def update_version(self):
+        self.version += 1
 
     def get_id(self) -> str:
         return self.id
 
-    def get_index(self) -> int:
-        return self.index
-
     def __repr__(self) -> str:
-        return f"ID_Objeto = {self.id}"
+        return f"Object ID: {self.id} with Version {self.version}.0"

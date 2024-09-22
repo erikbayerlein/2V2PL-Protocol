@@ -4,105 +4,67 @@ import transactions
 
 class InputReader:
     @staticmethod
-    def read_input(input_str: str):
-        """
-        Converts the input string into a list of elements.
-        """
-        elementos = list(input_str)
-        return elementos
+    def parse_operations_string(input_elements, schema):
+        transactions_parsed = []
+        for i in range(len(input_elements)):
+            match input_elements[i]:
+                case 'r':
+                    new_transaction = InputReader._parse_read(input_elements, i, schema)
+                    transactions_parsed.append(new_transaction)
+                case 'w':
+                    new_transaction = InputReader._parse_write(input_elements, i, schema)
+                    transactions_parsed.append(new_transaction)
+                case 'c':
+                    new_transaction = InputReader._parse_commit(input_elements, i)
+                    transactions_parsed.append(new_transaction)
+                case 'u':
+                    new_transaction = InputReader._parse_update(input_elements, i, schema)
+                    transactions_parsed.append(new_transaction)
+
+        return transactions_parsed
 
     @staticmethod
-    def parse_operations_string(elementos, schema):
-        """
-        Parses the input string of operations and constructs a list of transaction operations.
-        """
-        vetor_tran = []
-        i = [i for i in range(len(elementos))]
+    def _parse_read(input_elements, index, schema):
+        parsed_elements = [operations.Operation('r'), transactions.Transaction(input_elements[index + 1])]
 
-        for j in i:
-            if elementos[j] == 'r':
-                vetor = InputReader._parse_read(elementos, j, schema)
-                vetor_tran.append(vetor)
-            elif elementos[j] == 'w':
-                vetor = InputReader._parse_write(elementos, j, schema)
-                vetor_tran.append(vetor)
-            elif elementos[j] == 'c':
-                vetor = InputReader._parse_commit(elementos, j)
-                vetor_tran.append(vetor)
-            elif elementos[j] == 'u':
-                vetor = InputReader._parse_update(elementos, j, schema)
-                vetor_tran.append(vetor)
+        aux = InputReader._parse_aux(input_elements, index)
+        parsed_elements.append(schema[''.join(aux)])
 
-        return vetor_tran
+        return parsed_elements
 
     @staticmethod
-    def _parse_read(elementos, index, schema):
-        """
-        Parse a read operation and return the corresponding vector.
-        """
-        vetor = []
+    def _parse_write(input_elements, index, schema):
+        parsed_elements = [operations.Operation('w'), transactions.Transaction(input_elements[index + 1])]
+
+        aux = InputReader._parse_aux(input_elements, index)
+        parsed_elements.append(schema[''.join(aux)])
+
+        return parsed_elements
+
+    @staticmethod
+    def _parse_commit(input_elements, index):
+        parsed_elements = [operations.Operation('c'), transactions.Transaction(input_elements[index + 1])]
+        return parsed_elements
+
+    @staticmethod
+    def _parse_update(input_elements, index, schema):
+        parsed_elements = [operations.Operation('u'), transactions.Transaction(input_elements[index + 1])]
+
+        aux = InputReader._parse_aux(input_elements, index)
+        parsed_elements.append(schema[''.join(aux)])
+
+        return parsed_elements
+
+    @staticmethod
+    def _parse_aux(input_elements, index):
         aux = []
-        vetor.append(operations.Operation('r'))
-        vetor.append(transactions.Transaction(elementos[index + 1]))
-
-        aux = InputReader._parse_aux(elementos, index)
-        vetor.append(schema[''.join(aux)])
-
-        return vetor
-
-    @staticmethod
-    def _parse_write(elementos, index, schema):
-        """
-        Parse a write operation and return the corresponding vector.
-        """
-        vetor = []
-        aux_1 = []
-        vetor.append(operations.Operation('w'))
-        vetor.append(transactions.Transaction(elementos[index + 1]))
-
-        aux_1 = InputReader._parse_aux(elementos, index)
-        vetor.append(schema[''.join(aux_1)])
-
-        return vetor
-
-    @staticmethod
-    def _parse_commit(elementos, index):
-        """
-        Parse a commit operation and return the corresponding vector.
-        """
-        vetor = []
-        vetor.append(operations.Operation('c'))
-        vetor.append(transactions.Transaction(elementos[index + 1]))
-        return vetor
-
-    @staticmethod
-    def _parse_update(elementos, index, schema):
-        """
-        Parse an update operation and return the corresponding vector.
-        """
-        vetor = []
-        aux = []
-        vetor.append(operations.Operation('u'))
-        vetor.append(transactions.Transaction(elementos[index + 1]))
-
-        aux = InputReader._parse_aux(elementos, index)
-        vetor.append(schema[''.join(aux)])
-
-        return vetor
-
-    @staticmethod
-    def _parse_aux(elementos, index):
-        """
-        Extracts auxiliary information for objects involved in the operation (e.g., TP16).
-        """
-        aux = []
-        if elementos[index + 3] == 'B':
-            aux.append(elementos[index + 3])
-            aux.append(elementos[index + 4])
+        if input_elements[index + 3] == 'B':
+            aux.append(input_elements[index + 3])
+            aux.append(input_elements[index + 4])
         else:
-            aux.append(elementos[index + 3])
-            aux.append(elementos[index + 4])
-            aux.append(elementos[index + 5])
-            if elementos[index + 6] != ')':
-                aux.append(elementos[index + 6])
+            aux.append(input_elements[index + 3])
+            aux.append(input_elements[index + 4])
+            aux.append(input_elements[index + 5])
+            if input_elements[index + 6] != ')':
+                aux.append(input_elements[index + 6])
         return aux

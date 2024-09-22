@@ -2,17 +2,17 @@ class Locks:
     @staticmethod
     def lock_read(transaction):
         t = transaction[1].get_transaction()
-        Locks.apply_lock(transaction, 'RL', t)
+        Locks._apply_lock(transaction, 'RL', t)
 
     @staticmethod
     def lock_write(transaction):
         t = transaction[1].get_transaction()
-        Locks.apply_lock(transaction, 'WL', t)
+        Locks._apply_lock(transaction, 'WL', t)
 
     @staticmethod
     def lock_update(transaction):
         t = transaction[1].get_transaction()
-        Locks.apply_lock(transaction, 'UL', t)
+        Locks._apply_lock(transaction, 'UL', t)
 
     @staticmethod
     def lock_certify(obj, transaction):
@@ -33,7 +33,7 @@ class Locks:
         Locks._release_descendant_locks(obj, t)
 
     @staticmethod
-    def apply_lock(transaction, lock_type, t):
+    def _apply_lock(transaction, lock_type, t):
         lock = [lock_type, t]
         transaction[2].locks.append(lock)
         Locks._apply_ancestor_locks(transaction, lock_type, t)
