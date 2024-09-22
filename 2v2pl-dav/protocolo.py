@@ -166,7 +166,7 @@ class DeadlockException(Exception):
 #
 #     return s
 
-class Schedule:
+class Scheduler:
     def __init__(self):
         self.graph = Graph()
         self.waiting_transactions = []
@@ -201,11 +201,11 @@ class Schedule:
         success, conflicting_trans = bloqueios.check_locks(transactions, trans, 'WL', transaction)
         if success:
             bloqueios.lock_write(trans)
-            obj.converte_version(transaction)
+            obj.change_version(transaction)
             s.append(copy.deepcopy(trans))
-            obj.version_normal()
+            obj.normal_version()
             self._grant_update(obj, transaction)
-            print(f"Transaction {trans[1]} got write lock for object {obj}")
+            print(f"Transaction {trans[1]} got write lock for object {obj.__repr__()}")
         else:
             self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
@@ -215,12 +215,12 @@ class Schedule:
         if success:
             bloqueios.lock_read(trans)
             if self._check_write(transaction, obj):
-                obj.converte_version(transaction)
+                obj.change_version(transaction)
                 s.append(copy.deepcopy(trans))
-                obj.version_normal()
+                obj.normal_version()
             else:
                 s.append(trans)
-            print(f"Transaction {trans[1]} got read lock for object {obj}")
+            print(f"Transaction {trans[1]} got read lock for object {obj.__repr__()}")
         else:
             self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
@@ -263,9 +263,9 @@ class Schedule:
     @staticmethod
     def _grant_update(obj, transaction):
         transaction_id = transaction.get_transaction()
-        for i, bloqueio in enumerate(obj.bloqueios):
+        for i, bloqueio in enumerate(obj.blocks):
             if bloqueio[1] == transaction_id and bloqueio[0] == 'UL':
-                obj.bloqueios[i][0] = 'WL'
+                obj.blocks[i][0] = 'WL'
 
     @staticmethod
     def _grant_certify(transactions, transaction):
@@ -276,7 +276,7 @@ class Schedule:
         certify_objects = [
             obj for obj in write_objects
             if all(bloqueio[0] not in ('RL', 'IRL') or bloqueio[1] == transaction.get_transaction() for bloqueio in
-                   obj.bloqueios)
+                   obj.blocks)
         ]
         for obj in certify_objects:
             bloqueios.lock_certify(obj, transaction)
@@ -306,11 +306,11 @@ class Schedule:
             if t[0].get_operation() == 'Write' and t[1].get_transaction() == transaction.get_transaction()
         ]
         for obj in read_objects:
-            for bloqueio in obj.bloqueios:
+            for bloqueio in obj.blocks:
                 if bloqueio[0] in ('RL', 'IRL') and bloqueio[1] != transaction.get_transaction():
                     return True, bloqueio[1]
         return False, None
 
     @staticmethod
     def _check_write(transaction, obj):
-        return any(bloqueio[1] == transaction.get_transaction() and bloqueio[0] == 'WL' for bloqueio in obj.bloqueios)
+        return any(bloqueio[1] == transaction.get_transaction() and bloqueio[0] == 'WL' for bloqueio in obj.blocks)

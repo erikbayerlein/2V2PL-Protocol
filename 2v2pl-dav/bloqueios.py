@@ -1,6 +1,6 @@
 import transactions
-import objetos
-from objetos import Objetos
+import objects
+from objects import Objects
 
 """
 Função que concede um bloqueio do tipo leitura para um determinado objeto e sobe intencionais de leitura
@@ -10,22 +10,22 @@ def lock_read(vetor):
     bloqueio = ['RL']
     t = vetor[1].get_transaction()
     bloqueio.append(t)
-    vetor[2].bloqueios.append(bloqueio)
-    ordem = list(vetor[2].parentes.keys())
+    vetor[2].blocks.append(bloqueio)
+    ordem = list(vetor[2].ancestors.keys())
     ordem = ordem[:vetor[2].index][::-1]
     for i in ordem:
         bloqueio = ['IRL']
         new = vetor[1].get_transaction()
         bloqueio.append(t)
-        vetor[2].parentes[i][0].bloqueios.append(bloqueio)
-    ordem = list(vetor[2].parentes.keys())
+        vetor[2].ancestors[i][0].blocks.append(bloqueio)
+    ordem = list(vetor[2].ancestors.keys())
     ordem = ordem[vetor[2].index+1:]
     for j in ordem:
         bloqueio = ['RL']
         new = vetor[1].get_transaction()
         bloqueio.append(t)
-        for k in range(len(vetor[2].parentes[j])):
-            vetor[2].parentes[j][k].bloqueios.append(bloqueio)
+        for k in range(len(vetor[2].ancestors[j])):
+            vetor[2].ancestors[j][k].blocks.append(bloqueio)
 
 """
 Função que concede bloqueio do tipo leitura para um determinado objeto e sobe intencionais de escrita
@@ -35,22 +35,22 @@ def lock_write(vetor):
     bloqueio = ['WL']
     t = vetor[1].get_transaction()
     bloqueio.append(t)
-    vetor[2].bloqueios.append(bloqueio)
-    ordem = list(vetor[2].parentes.keys())
+    vetor[2].blocks.append(bloqueio)
+    ordem = list(vetor[2].ancestors.keys())
     ordem = ordem[:vetor[2].index][::-1]
     for i in ordem:
         bloqueio = ['IWL']
         new = vetor[1].get_transaction()
         bloqueio.append(t)
-        vetor[2].parentes[i][0].bloqueios.append(bloqueio)
-    ordem = list(vetor[2].parentes.keys())
+        vetor[2].ancestors[i][0].blocks.append(bloqueio)
+    ordem = list(vetor[2].ancestors.keys())
     ordem = ordem[vetor[2].index+1:]
     for j in ordem:
         bloqueio = ['WL']
         new = vetor[1].get_transaction()
         bloqueio.append(t)
-        for k in range(len(vetor[2].parentes[j])):
-            vetor[2].parentes[j][k].bloqueios.append(bloqueio)
+        for k in range(len(vetor[2].ancestors[j])):
+            vetor[2].ancestors[j][k].blocks.append(bloqueio)
 
 """
 Função que concede bloqueio do tipo update para um determinado objeto e sobe intencionais de update
@@ -60,43 +60,43 @@ def lock_update(vetor):
     bloqueio = ['UL']
     t = vetor[1].get_transaction()
     bloqueio.append(t)
-    vetor[2].bloqueios.append(bloqueio)
-    ordem = list(vetor[2].parentes.keys())
+    vetor[2].blocks.append(bloqueio)
+    ordem = list(vetor[2].ancestors.keys())
     ordem = ordem[:vetor[2].index][::-1]
     for i in ordem:
         bloqueio = ['IUL']
         new = vetor[1].get_transaction()
         bloqueio.append(t)
-        vetor[2].parentes[i][0].bloqueios.append(bloqueio)
-    ordem = list(vetor[2].parentes.keys())
+        vetor[2].ancestors[i][0].blocks.append(bloqueio)
+    ordem = list(vetor[2].ancestors.keys())
     ordem = ordem[vetor[2].index+1:]
     for j in ordem:
         bloqueio = ['UL']
         new = vetor[1].get_transaction()
         bloqueio.append(t)
-        for k in range(len(vetor[2].parentes[j])):
-            vetor[2].parentes[j][k].bloqueios.append(bloqueio)
+        for k in range(len(vetor[2].ancestors[j])):
+            vetor[2].ancestors[j][k].blocks.append(bloqueio)
 
 """
 Função que tem como objetivo liberar bloqueios de objetos associados a determinada transação
 """
 def liberar_locks(objeto, transaction):
     verifica = transaction.get_transaction()
-    for i, j in reversed(list(enumerate(objeto.bloqueios))):
+    for i, j in reversed(list(enumerate(objeto.blocks))):
         if j[1] == verifica:
-            del objeto.bloqueios[i]
-    ordem = list(objeto.parentes.keys())
+            del objeto.blocks[i]
+    ordem = list(objeto.ancestors.keys())
     ordem = ordem[:objeto.index][::-1]
     for i in ordem:
-        for j, k in reversed(list(enumerate(objeto.parentes[i][0].bloqueios))):
+        for j, k in reversed(list(enumerate(objeto.ancestors[i][0].blocks))):
             if k[1] == verifica:
-                del objeto.parentes[i][0].bloqueios[j]
-    ordem = list(objeto.parentes.keys())
+                del objeto.ancestors[i][0].blocks[j]
+    ordem = list(objeto.ancestors.keys())
     ordem = ordem[objeto.index+1:]
     for i in ordem:
-        for j, k in reversed(list(enumerate(objeto.parentes[i][0].bloqueios))):
+        for j, k in reversed(list(enumerate(objeto.ancestors[i][0].blocks))):
             if k[1] == verifica:
-                del objeto.parentes[i][0].bloqueios[j]
+                del objeto.ancestors[i][0].blocks[j]
 
 """
 Função que define bloqueio do tipo certify para determinado objeto e sobe intencionais de certify
@@ -104,21 +104,21 @@ para os seus ascendentes
 """
 def lock_certify(objeto, transaction):
     transaction = transaction.get_transaction()
-    for i, j in enumerate(objeto.bloqueios):
+    for i, j in enumerate(objeto.blocks):
         if j[1] == transaction and j[0] == 'WL':
-            objeto.bloqueios[i][0] = 'CL'
-    ordem = list(objeto.parentes.keys())
+            objeto.blocks[i][0] = 'CL'
+    ordem = list(objeto.ancestors.keys())
     ordem = ordem[:objeto.index][::-1]
     for i in ordem:
-        for j, k in enumerate(objeto.parentes[i][0].bloqueios):
+        for j, k in enumerate(objeto.ancestors[i][0].blocks):
             if k[1] == transaction and k[0] == 'IWL':
-                objeto.parentes[i][0].bloqueios[j][0] = 'ICL'
-    ordem = list(objeto.parentes.keys())
+                objeto.ancestors[i][0].blocks[j][0] = 'ICL'
+    ordem = list(objeto.ancestors.keys())
     ordem = ordem[objeto.index+1:]
     for i in ordem:
-        for j, k in enumerate(objeto.parentes[i][0].bloqueios):
+        for j, k in enumerate(objeto.ancestors[i][0].blocks):
             if k[1] == transaction and k[0] == 'IWL':
-                objeto.parentes[i][0].bloqueios[j][0] = 'ICL'    
+                objeto.ancestors[i][0].blocks[j][0] = 'ICL'
 
 """
 Funcção que verifica se um bloqueio pode ser concedido a alguma transação
@@ -135,21 +135,21 @@ def check_locks(vetor,objeto, tipo:str, transaction):
     transactions = []
     if len(vetor_2) == 0: return (True, None) 
     if tipo == 'RL':
-        for i in vetor_2[0][2].bloqueios:
+        for i in vetor_2[0][2].blocks:
             if i[0] == 'CL' or i[0] == 'ICL' or i[0] == 'UL' or i[0] == 'IUL':
                 if i[1] != transaction.get_transaction():
                     return (False, i[1])
             transactions.append(i[1])
         return (True, transactions)
     elif tipo == 'WL':
-        for i in vetor_2[0][2].bloqueios:          
+        for i in vetor_2[0][2].blocks:
             if i[0] == 'CL' or i[0] == 'UL' or i[0] == 'WL' or i[0] == 'ICL' or i[0] == 'IWL' or i[0] == 'IUL':
                 if i[1] != transaction.get_transaction(): 
                     return (False, i[1])
             transactions.append(i[1])
         return (True, transactions)
     else:
-        for i in vetor_2[0][2].bloqueios:
+        for i in vetor_2[0][2].blocks:
             if i[0] == 'WL' or i[0] == 'UL' or i[0] == 'IWL' or i[0] == 'IUL':
                 if i[1] != transaction.get_transaction(): 
                     return (False, i[1])

@@ -1,4 +1,4 @@
-import objetos
+import objects
 import operations
 import transactions
 import protocolo
@@ -8,10 +8,9 @@ from bloqueios import liberar_locks
 from bloqueios import lock_certify
 from bloqueios import check_locks
 
-# Inicializando o banco de dados
-ob = objetos.Objetos('Banco', 'BD')
+ob = objects.Objects('Database', 'BD')
 
-dic = objetos.criar_esquema(ob, 2, 2, 2, 2)
+dic = objects.create_schema(ob, 2, 2, 2, 2)
 
 scheduler = str(input("Digite o schedule: "))
 
@@ -77,7 +76,7 @@ def cria_objetos(scheduler):
 
 
 vetor_tran = cria_objetos(scheduler)
-scheduler = protocolo.Schedule()
+scheduler = protocolo.Scheduler()
 scheduler_correct = scheduler.schedule(vetor_tran)
 
 
