@@ -211,12 +211,7 @@ class Schedule:
             objeto.version_normal()
             self._grant_update(objeto, transaction)
         else:
-            self.graph.add_edge(conflicting_trans, transaction.get_transaction())
-            if self.graph.has_cycle():
-                transactions, aborted_trans = self._abort_transaction(s, transactions)
-                self.graph.remove_node(aborted_trans)
-                raise DeadlockException(f"{aborted_trans} se envolveu em um deadlock e foi abortada por ser a transação mais recente!")
-            self.waiting_transactions.append(trans)
+            self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
     def handle_read(self, trans, transactions, s, objeto):
         op, transaction = trans[0], trans[1]
@@ -230,12 +225,7 @@ class Schedule:
             else:
                 s.append(trans)
         else:
-            self.graph.add_edge(conflicting_trans, transaction.get_transaction())
-            if self.graph.has_cycle():
-                transactions, aborted_trans = self._abort_transaction(s, transactions)
-                self.graph.remove_node(aborted_trans)
-                raise DeadlockException(f"{aborted_trans} se envolveu em um deadlock e foi abortada por ser a transação mais recente!")
-            self.waiting_transactions.append(trans)
+            self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
     def handle_update(self, trans, transactions, s):
         op, transaction = trans[0], trans[1]
@@ -252,12 +242,7 @@ class Schedule:
         self._grant_certify(transactions, transaction)
 
         if has_conflict:
-            self.graph.add_edge(conflicting_trans, transaction.get_transaction())
-            if self.graph.has_cycle():
-                transactions, aborted_trans = self._abort_transaction(s, transactions)
-                self.graph.remove_node(aborted_trans)
-                raise DeadlockException(f"{aborted_trans} se envolveu em um deadlock e foi abortada por ser a transação mais recente!")
-            self.waiting_transactions.append(trans)
+            self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
         elif self._check_operation(self.waiting_transactions, transaction):
             self.waiting_transactions.append(trans)
         else:
@@ -265,6 +250,16 @@ class Schedule:
             self._lock_commit(s, transaction)
             self.graph.remove_node(transaction.get_transaction())
             s.append(trans)
+
+    def _handle_conflict(self, conflicting_trans, transaction, trans, transactions, s):
+        self.graph.add_edge(conflicting_trans, transaction.get_transaction())
+        if self.graph.has_cycle():
+            transactions, aborted_trans = self._abort_transaction(s, transactions)
+            self.graph.remove_node(aborted_trans)
+            raise DeadlockException(
+                f"{aborted_trans} se envolveu em um deadlock e foi abortada por ser a transação mais recente!"
+            )
+        self.waiting_transactions.append(trans)
 
     @staticmethod
     def _grant_update(objeto, transaction):
@@ -287,16 +282,6 @@ class Schedule:
         for obj in certify_objects:
             bloqueios.lock_certify(obj, transaction)
 
-    # @staticmethod
-    # def _handle_conflict(self, conflicting_trans, transaction, trans, transactions, s):
-    #     self.graph.add_edge(conflicting_trans, transaction.get_transaction())
-    #     if self.graph.has_cycle():
-    #         transactions, aborted_trans = self._abort_transaction(s, transactions)
-    #         self.graph.remove_node(aborted_trans)
-    #         raise DeadlockException(
-    #             f"{aborted_trans} se envolveu em um deadlock e foi abortada por ser a transação mais recente!"
-    #         )
-    #     self.waiting_transactions.append(trans)
 
     @staticmethod
     def _abort_transaction(s, transactions):
