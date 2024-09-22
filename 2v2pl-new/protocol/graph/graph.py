@@ -1,6 +1,20 @@
+import networkx as nx
+
 class Graph:
     def __init__(self):
-        self.node_connections = {}
+        self.graph = nx.DiGraph()
+
+    def create_nodes(self, operations):
+        for operation in operations:
+            if not self.graph.has_node(operation.transaction_id):
+                self.graph.add_node(operation.transaction_id)
+
+    def has_cycle(self):
+        return nx.is_directed_acyclic_graph(self.graph)
+
+
+    # ---------------------------------------------------------------------
+
 
     def add_node(self, node):
         if node not in self.node_connections:
@@ -11,14 +25,6 @@ class Graph:
         self.add_node(target_node)
         self.node_connections[source_node].add(target_node)
 
-    def has_cycle(self):
-        visited_nodes = set()
-        recursion_stack = set()
-
-        for node in self.node_connections:
-            if self._detect_cycle(node, visited_nodes, recursion_stack):
-                return True
-        return False
 
     def _detect_cycle(self, node, visited_nodes, recursion_stack):
         if node in recursion_stack:
