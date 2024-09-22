@@ -22,4 +22,3 @@ class Graph:
     def remove_node(self, aborted_transaction):
         self.graph.remove_node(aborted_transaction)
         print(f"Removing node {aborted_transaction}")
-
