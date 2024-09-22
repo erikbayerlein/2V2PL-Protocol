@@ -2,7 +2,7 @@
 .DS_Store
 
 # Ignore IDEA project files
-../.idea/
+.idea/
 
 # Ignore Python-specific files
 __pycache__/
