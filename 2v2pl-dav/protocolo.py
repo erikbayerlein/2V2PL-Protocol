@@ -1,5 +1,5 @@
-import bloqueios
 from graph import Graph
+from locks import Locks
 import copy
 
 
@@ -198,9 +198,9 @@ class Scheduler:
 
     def handle_write(self, trans, transactions, s, obj):
         op, transaction = trans[0], trans[1]
-        success, conflicting_trans = bloqueios.check_locks(transactions, trans, 'WL', transaction)
+        success, conflicting_trans = Locks.check_locks(transactions, trans, 'WL', transaction)
         if success:
-            bloqueios.lock_write(trans)
+            Locks.lock_write(trans)
             obj.change_version(transaction)
             s.append(copy.deepcopy(trans))
             obj.normal_version()
@@ -211,9 +211,9 @@ class Scheduler:
 
     def handle_read(self, trans, transactions, s, obj):
         op, transaction = trans[0], trans[1]
-        success, conflicting_trans = bloqueios.check_locks(transactions, trans, 'RL', transaction)
+        success, conflicting_trans = Locks.check_locks(transactions, trans, 'RL', transaction)
         if success:
-            bloqueios.lock_read(trans)
+            Locks.lock_read(trans)
             if self._check_write(transaction, obj):
                 obj.change_version(transaction)
                 s.append(copy.deepcopy(trans))
@@ -226,9 +226,9 @@ class Scheduler:
 
     def handle_update(self, trans, transactions, s):
         op, transaction = trans[0], trans[1]
-        success, conflicting_trans = bloqueios.check_locks(transactions, trans, 'UL', transaction)
+        success, conflicting_trans = Locks.check_locks(transactions, trans, 'UL', transaction)
         if success:
-            bloqueios.lock_update(trans)
+            Locks.lock_update(trans)
             s.append(trans)
         else:
             self.waiting_transactions.append(trans)
@@ -279,7 +279,7 @@ class Scheduler:
                    obj.blocks)
         ]
         for obj in certify_objects:
-            bloqueios.lock_certify(obj, transaction)
+            Locks.lock_certify(obj, transaction)
 
 
     @staticmethod
@@ -293,7 +293,7 @@ class Scheduler:
     def _lock_commit(transactions, transaction):
         for t in transactions:
             if t[0].operation != 'Commit':
-                bloqueios.liberar_locks(t[2], transaction)
+                Locks.release_locks(t[2], transaction)
 
     @staticmethod
     def _check_operation(transactions, transaction):

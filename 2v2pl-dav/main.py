@@ -67,7 +67,7 @@ def main():
     db = Objects('Database', 'DB')
     schema = db.create_schema(db, 2, 2, 2, 2)
 
-    input_str = "r1(TP16)r2(TP2)c1c2"
+    input_str = "r1(TP16)r2(TP2)u2(TP3)w2(TP3)c1c2"
     input_read = InputReader.read_input(input_str)
     input_parsed = InputReader.parse_operations_string(input_read, schema)
 

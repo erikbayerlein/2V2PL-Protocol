@@ -17,7 +17,9 @@ class Graph:
 
     def add_edge(self, conflicting_transaction, transaction):
         self.graph.add_edge(conflicting_transaction, transaction)
-        return
+        print(f"Dependency edge added from {conflicting_transaction} to {transaction}")
 
     def remove_node(self, aborted_transaction):
         self.graph.remove_node(aborted_transaction)
+        print(f"Removing node {aborted_transaction}")
+

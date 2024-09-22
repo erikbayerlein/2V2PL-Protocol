@@ -82,4 +82,4 @@ class Objects:
         return self.index
 
     def __repr__(self) -> str:
-        return f"ID_Objeto = {self.id} -> Versão = {self.version}"
+        return f"ID_Objeto = {self.id}"

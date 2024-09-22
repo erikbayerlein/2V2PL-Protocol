@@ -11,12 +11,3 @@ class Operation:
 
     def get_operation(self) -> str:
         return self.operation
-
-    def get_tipo(self) -> str:
-        return 'OP'
-
-    def __str__(self) -> str:
-        return f'Operação = {self.operation}'
-
-    def __repr__(self) -> str:
-        return f'Operação = {self.operation}'
