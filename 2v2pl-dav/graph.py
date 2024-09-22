@@ -5,21 +5,12 @@ class Graph:
     def __init__(self):
         self.graph = nx.DiGraph()
 
-    # def create_nodes(self, operations):
-    #     created_nodes = []
-    #     for operation in operations:
-    #         transaction_id = operation[1]
-    #         if transaction_id not in created_nodes:
-    #             self.graph.add_node(transaction_id)
-    #             created_nodes.append(transaction_id)
-
     def create_nodes(self, transactions):
         created_nodes = []
         for transaction in transactions:
             if transaction[1] not in created_nodes:
                 self.graph.add_node(f"{transaction[1].get_transaction()}")
                 created_nodes.append(transaction[1])
-
 
     def has_cycle(self):
         return nx.is_directed_acyclic_graph(self.graph)

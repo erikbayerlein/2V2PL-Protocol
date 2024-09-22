@@ -1,7 +1,4 @@
 import bloqueios
-import operations
-import transactions
-import networkx as nx
 from graph import Graph
 import copy
 
@@ -181,15 +178,15 @@ class Schedule:
         while transactions:
             for k, trans in enumerate(transactions):
                 op, transaction = trans[0], trans[1]
-                objeto = None
+                obj = None
                 if op.get_operation() != "Commit":
-                    objeto = trans[2]
+                    obj = trans[2]
 
                 try:
                     if op.get_operation() == 'Write':
-                        self.handle_write(trans, transactions, s, objeto)
+                        self.handle_write(trans, transactions, s, obj)
                     elif op.get_operation() == 'Read':
-                        self.handle_read(trans, transactions, s, objeto)
+                        self.handle_read(trans, transactions, s, obj)
                     elif op.get_operation() == 'Update':
                         self.handle_update(trans, transactions, s)
                     elif op.get_operation() == 'Commit':
@@ -201,27 +198,27 @@ class Schedule:
 
         return s
 
-    def handle_write(self, trans, transactions, s, objeto):
+    def handle_write(self, trans, transactions, s, obj):
         op, transaction = trans[0], trans[1]
         success, conflicting_trans = bloqueios.check_locks(transactions, trans, 'WL', transaction)
         if success:
             bloqueios.lock_write(trans)
-            objeto.converte_version(transaction)
+            obj.converte_version(transaction)
             s.append(copy.deepcopy(trans))
-            objeto.version_normal()
-            self._grant_update(objeto, transaction)
+            obj.version_normal()
+            self._grant_update(obj, transaction)
         else:
             self._handle_conflict(conflicting_trans, transaction, trans, transactions, s)
 
-    def handle_read(self, trans, transactions, s, objeto):
+    def handle_read(self, trans, transactions, s, obj):
         op, transaction = trans[0], trans[1]
         success, conflicting_trans = bloqueios.check_locks(transactions, trans, 'RL', transaction)
         if success:
             bloqueios.lock_read(trans)
-            if self._check_write(transaction, objeto):
-                objeto.converte_version(transaction)
+            if self._check_write(transaction, obj):
+                obj.converte_version(transaction)
                 s.append(copy.deepcopy(trans))
-                objeto.version_normal()
+                obj.version_normal()
             else:
                 s.append(trans)
         else:
@@ -262,11 +259,11 @@ class Schedule:
         self.waiting_transactions.append(trans)
 
     @staticmethod
-    def _grant_update(objeto, transaction):
+    def _grant_update(obj, transaction):
         transaction_id = transaction.get_transaction()
-        for i, bloqueio in enumerate(objeto.bloqueios):
+        for i, bloqueio in enumerate(obj.bloqueios):
             if bloqueio[1] == transaction_id and bloqueio[0] == 'UL':
-                objeto.bloqueios[i][0] = 'WL'
+                obj.bloqueios[i][0] = 'WL'
 
     @staticmethod
     def _grant_certify(transactions, transaction):
@@ -313,5 +310,5 @@ class Schedule:
         return False, None
 
     @staticmethod
-    def _check_write(transaction, objeto):
-        return any(bloqueio[1] == transaction.get_transaction() and bloqueio[0] == 'WL' for bloqueio in objeto.bloqueios)
+    def _check_write(transaction, obj):
+        return any(bloqueio[1] == transaction.get_transaction() and bloqueio[0] == 'WL' for bloqueio in obj.bloqueios)
