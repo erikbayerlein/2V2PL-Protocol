@@ -1,34 +1,30 @@
 class Locks:
     @staticmethod
-    def lock_read(transaction):
+    def read_lock(transaction):
         t = transaction[1].get_transaction()
-        Locks._apply_lock(transaction, 'RL', t)
+        Locks._apply_lock(transaction, "RL", t)
 
     @staticmethod
-    def lock_write(transaction):
+    def write_lock(transaction):
         t = transaction[1].get_transaction()
-        Locks._apply_lock(transaction, 'WL', t)
+        Locks._apply_lock(transaction, "WL", t)
 
     @staticmethod
-    def lock_update(transaction):
+    def update_lock(transaction):
         t = transaction[1].get_transaction()
-        Locks._apply_lock(transaction, 'UL', t)
+        Locks._apply_lock(transaction, "UL", t)
 
     @staticmethod
-    def lock_certify(obj, transaction):
+    def certify_lock(obj, transaction):
         t = transaction.get_transaction()
-        for i, j in enumerate(obj.locks):
-            if j[1] == t and j[0] == 'WL':
-                obj.locks[i][0] = 'CL'
+        obj.locks = [["CL", lock[1]] if lock[1] == t and lock[0] == "WL" else lock for lock in obj.locks]
         Locks._apply_ancestor_certification(obj, t)
         Locks._apply_descendant_certification(obj, t)
 
     @staticmethod
     def release_locks(obj, transaction):
         t = transaction.get_transaction()
-        for i, j in reversed(list(enumerate(obj.locks))):
-            if j[1] == t:
-                del obj.locks[i]
+        obj.locks = [lock for lock in obj.locks if lock[1] != t]
         Locks._release_ancestor_locks(obj, t)
         Locks._release_descendant_locks(obj, t)
 
@@ -55,62 +51,55 @@ class Locks:
 
     @staticmethod
     def _apply_ancestor_locks(transaction, lock_type, t):
-        order = list(transaction[2].ancestors.keys())[:transaction[2].index][::-1]
-        for i in order:
-            lock = ['I' + lock_type, t]  # For ancestors, use 'I' (intent)
-            transaction[2].ancestors[i][0].locks.append(lock)
+        order = list(transaction[2].ancestors.keys())[:transaction[2].entity_type][::-1]
+        lock = ["I" + lock_type, t]
+        for ancestor in (transaction[2].ancestors[i][0] for i in order):
+            ancestor.locks.append(lock)
 
     @staticmethod
     def _apply_descendant_locks(transaction, lock_type, t):
-        order = list(transaction[2].ancestors.keys())[transaction[2].index + 1:]
-        for j in order:
-            lock = [lock_type, t]
-            for k in range(len(transaction[2].ancestors[j])):
-                transaction[2].ancestors[j][k].locks.append(lock)
+        order = list(transaction[2].ancestors.keys())[transaction[2].entity_type + 1:]
+        lock = [lock_type, t]
+        for i in order:
+            for ancestor in transaction[2].ancestors[i]:
+                ancestor.locks.append(lock)
 
     @staticmethod
     def _apply_ancestor_certification(obj, t):
-        order = list(obj.ancestors.keys())[:obj.index][::-1]
+        order = list(obj.ancestors.keys())[:obj.entity_type][::-1]
         for i in order:
-            for j, k in enumerate(obj.ancestors[i][0].locks):
-                if k[1] == t and k[0] == 'IWL':
-                    obj.ancestors[i][0].locks[j][0] = 'ICL'
+            ancestor_locks = obj.ancestors[i][0].locks
+            ancestor_locks[:] = [["ICL", lock[1]] if lock[1] == t and lock[0] == "IWL" else lock for lock in ancestor_locks]
 
     @staticmethod
     def _apply_descendant_certification(obj, t):
-        order = list(obj.ancestors.keys())[obj.index + 1:]
+        order = list(obj.ancestors.keys())[obj.entity_type + 1:]
         for i in order:
-            for j, k in enumerate(obj.ancestors[i][0].locks):
-                if k[1] == t and k[0] == 'IWL':
-                    obj.ancestors[i][0].locks[j][0] = 'ICL'
+            obj.ancestors[i][0].locks = [["ICL", lock[1]] if lock[1] == t and lock[0] == "IWL" else lock for lock in obj.ancestors[i][0].locks]
 
     @staticmethod
     def _release_ancestor_locks(obj, t):
-        order = list(obj.ancestors.keys())[:obj.index][::-1]
+        order = list(obj.ancestors.keys())[:obj.entity_type][::-1]
         for i in order:
-            for j, k in reversed(list(enumerate(obj.ancestors[i][0].locks))):
-                if k[1] == t:
-                    del obj.ancestors[i][0].locks[j]
+            obj.ancestors[i][0].locks = [lock for lock in obj.ancestors[i][0].locks if lock[1] != t]
 
     @staticmethod
     def _release_descendant_locks(obj, t):
-        order = list(obj.ancestors.keys())[obj.index + 1:]
+        order = list(obj.ancestors.keys())[obj.entity_type + 1:]
         for i in order:
-            for j, k in reversed(list(enumerate(obj.ancestors[i][0].locks))):
-                if k[1] == t:
-                    del obj.ancestors[i][0].locks[j]
+            obj.ancestors[i][0].locks[:] = [lock for lock in obj.ancestors[i][0].locks if lock[1] != t]
 
     @staticmethod
     def _get_conflicting_locks(blocks, l_type, t):
         lock_types = {
-            'RL': {'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'WL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'UL': {'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'CL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'IRL': {'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'IWL': {'RL', 'WL', 'UL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'IUL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
-            'ICL': {'RL', 'WL', 'UL', 'IRL', 'IWL', 'IUL', 'CL', 'ICL'},
+            "RL": {"WL", "UL", "IWL", "IUL", "CL", "ICL"},
+            "WL": {"RL", "WL", "UL", "IRL", "IWL", "IUL", "CL", "ICL"},
+            "UL": {"WL", "UL", "IWL", "IUL", "CL", "ICL"},
+            "CL": {"RL", "WL", "UL", "IRL", "IWL", "IUL", "CL", "ICL"},
+            "IRL": {"WL", "UL", "IWL", "IUL", "CL", "ICL"},
+            "IWL": {"RL", "WL", "UL", "IWL", "IUL", "CL", "ICL"},
+            "IUL": {"RL", "WL", "UL", "IRL", "IWL", "IUL", "CL", "ICL"},
+            "ICL": {"RL", "WL", "UL", "IRL", "IWL", "IUL", "CL", "ICL"},
         }
 
         conflicting_types = lock_types.get(l_type, set())
